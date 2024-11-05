@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.format.DateTimeFormatter;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -27,17 +28,17 @@ public class APIController {
     private MessageRepository messageRepository;
 
     @PutMapping("/channels")
-    public ResponseEntity<?> registerANewChannel(@RequestBody Channel channel){
+    public ResponseEntity<?> registerANewChannel(@RequestBody Channel channel) {
 
-        if(channel.getId().isBlank() || channel.getId() == null){
-            return  new ResponseEntity("Invalid ID", HttpStatus.BAD_REQUEST);
-        }else if(channel.getOwner().isBlank() || channel.getOwner() == null){
-            return  new ResponseEntity("Invalid Owner", HttpStatus.BAD_REQUEST);
-        }else if(channel.getTopic().isBlank() || channel.getTopic() == null){
-            return  new ResponseEntity("Invalid Topic", HttpStatus.BAD_REQUEST);
+        if (channel.getId().isBlank() || channel.getId() == null) {
+            return new ResponseEntity("Invalid ID", HttpStatus.BAD_REQUEST);
+        } else if (channel.getOwner().isBlank() || channel.getOwner() == null) {
+            return new ResponseEntity("Invalid Owner", HttpStatus.BAD_REQUEST);
+        } else if (channel.getTopic().isBlank() || channel.getTopic() == null) {
+            return new ResponseEntity("Invalid Topic", HttpStatus.BAD_REQUEST);
         }
         Optional<Channel> channelTest = channelRepository.findById(channel.getId());
-        if(channelTest.isPresent()) {
+        if (channelTest.isPresent()) {
             return new ResponseEntity<>("Channel with such Id already exists.", HttpStatus.OK);
         }
         channelRepository.save(channel);
@@ -47,38 +48,38 @@ public class APIController {
     }
 
     @GetMapping("/channels/{channelId}")
-    public ResponseEntity<?> getChannelById (@PathVariable String channelId){
+    public ResponseEntity<?> getChannelById(@PathVariable String channelId) {
         Optional<Channel> channel = channelRepository.findById(channelId);
-        if(channel.isPresent()){
-                return  new ResponseEntity<>(channel, HttpStatus.OK);
-        }else{
-                return  new ResponseEntity<>("Channel with the ID " + channelId + " was not found", HttpStatus.NOT_FOUND);
+        if (channel.isPresent()) {
+            return new ResponseEntity<>(channel, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("Channel with the ID " + channelId + " was not found", HttpStatus.NOT_FOUND);
         }
     }
 
     @DeleteMapping("/channels/{channelId}")
-    public ResponseEntity <?> deleteChannelById (@PathVariable String channelId){
+    public ResponseEntity<?> deleteChannelById(@PathVariable String channelId) {
         Optional<Channel> channel = channelRepository.findById(channelId);
-        if(channel.isPresent()){
+        if (channel.isPresent()) {
             channelRepository.deleteById(channelId);
-            return  new ResponseEntity<>(channel, HttpStatus.NO_CONTENT);
-        }else{
-            return  new ResponseEntity<>("Channel with the ID " + channelId + " was not found", HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(channel, HttpStatus.NO_CONTENT);
+        } else {
+            return new ResponseEntity<>("Channel with the ID " + channelId + " was not found", HttpStatus.NOT_FOUND);
         }
     }
 
     @PutMapping("channels/{channelId}/messages")
-    public ResponseEntity <?> AddMessageToChannel (@PathVariable String channelId, @RequestBody Message message){
+    public ResponseEntity<?> AddMessageToChannel(@PathVariable String channelId, @RequestBody Message message) {
         Optional<Channel> channel = channelRepository.findById(channelId);
 
-        if(channel.isEmpty()){
-            return  new ResponseEntity<>("Channel with the ID " + channelId + " was not found", HttpStatus.NOT_FOUND);
+        if (channel.isEmpty()) {
+            return new ResponseEntity<>("Channel with the ID " + channelId + " was not found", HttpStatus.NOT_FOUND);
         }/*else if(!(channel.get().getMembers().contains(message.getAuthor()))){
             return  new ResponseEntity<>("The author is not a member of the channel", HttpStatus.NOT_FOUND);
-        }*/else if(message.getAuthor().isBlank() || message.getAuthor() == null){
-            return  new ResponseEntity<>("Invalid author", HttpStatus.BAD_REQUEST);
+        }*/ else if (message.getAuthor().isBlank() || message.getAuthor() == null) {
+            return new ResponseEntity<>("Invalid author", HttpStatus.BAD_REQUEST);
         } else if (message.getText().isBlank() || message.getText() == null) {
-            return  new ResponseEntity<>("Invalid text", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("Invalid text", HttpStatus.BAD_REQUEST);
         }
         LocalTime now = LocalTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HHmmss");
@@ -89,13 +90,37 @@ public class APIController {
 
 
         messageRepository.save(message);
-        return  new ResponseEntity<>(HttpStatus.CREATED);
+        return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
     @GetMapping("channels/{channelId}/messages")
-    public ResponseEntity <?> getMessagesFromChannel (@PathVariable String channelId, @RequestBody messageRequest messageRequest){
+    public ResponseEntity<?> getMessagesFromChannel(@PathVariable String channelId,@RequestParam(required = false) String author, @RequestParam(required = false) Integer startAt) {
         Optional<Channel> channel = channelRepository.findById(channelId);
+        List<Message> messages;
+
         if (channel.isEmpty()) {
+
             return new ResponseEntity<>("Channel with the ID " + channelId + " was not found", HttpStatus.NOT_FOUND);
         }
+
+        if( (author != null && !author.isBlank()) && (startAt != null)) {
+            System.out.println(("1"));
+            messages = messageRepository.findByChannelIdAndAuthorAndTimestampGreaterThanEqual(channelId, author, startAt);
+            return new ResponseEntity<>(messages, HttpStatus.OK);
+        }
+        if(author != null && !author.isBlank()){
+            System.out.println(("2"));
+            messages = messageRepository.findByChannelIdAndAuthor(channelId, author);
+            return new ResponseEntity<>(messages, HttpStatus.OK);
+        }
+        if(startAt != null){
+            System.out.println(("3"));
+                messages = messageRepository.findByChannelIdAndTimestampGreaterThanEqual(channelId, startAt);
+            return new ResponseEntity<>(messages, HttpStatus.OK);
+        }
+        System.out.println(("4"));
+        messages = messageRepository.findByChannelId(channelId);
+        return new ResponseEntity<>(messages, HttpStatus.OK);
+
     }
+}

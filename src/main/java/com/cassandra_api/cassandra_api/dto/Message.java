@@ -14,25 +14,21 @@ public class Message {
     @Column("text")
     String text;
 
-    @Column("author")
+    @PrimaryKeyColumn(name = "author", ordinal = 1, type = PrimaryKeyType.CLUSTERED)
     String author;
 
-    @PrimaryKeyColumn(name = "timestamp", ordinal = 1, type = PrimaryKeyType.CLUSTERED)
+    @PrimaryKeyColumn(name = "timestamp", ordinal = 2, type = PrimaryKeyType.CLUSTERED)
     int timestamp;
 
     @PrimaryKeyColumn(name = "channelId", ordinal = 0, type = PrimaryKeyType.PARTITIONED)
     String channelId;
 
-    @PrimaryKeyColumn(name = "uuid", ordinal = 2, type = PrimaryKeyType.CLUSTERED)
-    private UUID uuid;
 
 
     public Message() {
-        this.uuid = UUID.randomUUID();
     }
 
     public Message(String text, String author, int timestamp, String channelId) {
-        this.uuid = UUID.randomUUID();
         this.text = text;
         this.author = author;
         this.timestamp = timestamp;
